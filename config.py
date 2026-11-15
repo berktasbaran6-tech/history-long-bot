@@ -35,7 +35,7 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 TTS_VOICE = os.getenv("TTS_VOICE", "en-US-GuyNeural")  # dynamic, emphatic, expressive documentary voice
 TTS_RATE = os.getenv("TTS_RATE", "-2%")  # energetic yet measured documentary pacing
 TTS_PITCH = os.getenv("TTS_PITCH", "+0Hz")
-TARGET_SCENES = 38  # 38 scenes * 19s = ~12 minutes deep documentary
+TARGET_SCENES = 46  # 46 scenes * 17s = ~12.5 to 13.5 minutes guaranteed long documentary
 WIDTH, HEIGHT, FPS = 1920, 1080, 30
 MUSIC_VOLUME = 0.08  # background music under documentary narration
 

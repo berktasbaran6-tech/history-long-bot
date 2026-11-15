@@ -20,7 +20,7 @@ Narrative & Emphatic Vocal Rules:
    - Chapter 4: The Corpse on Trial / The Unbelievable Spectacle (The courtroom trial in vivid detail)
    - Chapter 5: The Brutal Sentence & The River Tiber (The desecration and violent punishment)
    - Chapter 6: The Fall & The Historical Reckoning (The furious rebellion and the killer's fate)
-3. Scene Pacing: Produce exactly 36 to 40 scenes. Each scene contains 50-65 words of intense, evocative narration (~19-23 seconds per cut).
+3. Scene Pacing: Produce exactly 44 to 48 scenes. Each scene contains 50-65 words of intense, evocative narration (~17-21 seconds per cut, ensuring total video length is comfortably between 12 and 14 minutes).
 4. Authentic Museum Visuals: Specify authentic, museum-documented paintings, archival engravings, medieval manuscripts, ancient coin portraits, or archaeological maps (e.g. 'Jean Paul Laurens Cadaver Synod painting', 'Vatican archive manuscript 9th century', 'Lateran basilica ancient Rome reconstruction', 'Tiber river Rome medieval engraving')."""
 
 
@@ -37,7 +37,7 @@ class HistoryScript(BaseModel):
     thumbnail_query: str = Field(description="Search query for the most dramatic historical painting to use as cover")
     description: str = Field(description="Engaging YouTube description explaining the historical context")
     tags: list[str] = Field(description="12-16 high-volume history SEO tags")
-    scenes: list[Scene] = Field(description="Exactly 36 to 40 sequential scenes building an 11-14 minute deep documentary")
+    scenes: list[Scene] = Field(description="Exactly 44 to 48 sequential scenes building a guaranteed 12-14 minute deep documentary")
 
 
 _client = None
@@ -106,11 +106,11 @@ Focus on bizarre military blunders, secret deceptions, eccentric rulers, or shoc
 
 def write_script(idea: TopicIdea) -> HistoryScript:
     """Generate the full documentary script for the chosen topic."""
-    prompt = f"""Write an exceptional, deep-dive 11-to-14 minute historical documentary script for:
+    prompt = f"""Write an exceptional, deep-dive 12-to-14 minute historical documentary script for:
 Topic: {idea.topic}
 Hook idea: {idea.hook}
 
-Produce exactly 36 to 40 sequential scenes (each 50-65 words of captivating, emphatic narration).
+Produce exactly 44 to 48 sequential scenes (each 50-65 words of captivating, emphatic narration, ensuring the total length is at least 12 minutes).
 Ensure each scene has an accurate, museum-verified Wikimedia Commons search query for genuine historical art, statues, or archival photos."""
 
     return _ask(prompt, HistoryScript)
