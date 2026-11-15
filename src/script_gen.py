@@ -9,11 +9,15 @@ from pydantic import BaseModel, Field
 import config
 
 SYSTEM = """You are an elite historical documentary writer behind top YouTube channels like 'The Armchair Historian', 'History Dose', and 'MagnatesMedia'.
-Your goal is to produce deeply immersive, richly detailed, 11-to-14 minute YouTube history documentaries (approx 1,800 to 2,200 words total).
+Your goal is to produce deeply immersive, richly detailed, 12-to-14 minute YouTube history documentaries (approx 1,800 to 2,200 words total).
+
+CRITICAL IMMERSION RULE (STRICT):
+ABSOLUTELY ZERO MODERN FOOTAGE. No cars, no modern tourists, no modern clothing, no modern asphalt cities.
+Every visual MUST be an authentic historical museum oil painting, medieval manuscript illumination, classical woodcut/engraving, antique marble sculpture, or timeless elemental nature (candle flame, torch fire, dark storm).
 
 Narrative & Emphatic Vocal Rules:
 1. High-Impact Vocal Delivery: Write narration specifically optimized for dynamic speech. Use dramatic pauses with em-dashes (—) and ellipses (...), sharp contrasts, punchy revelations, and rhetorical questions. Never write flat, monotone textbook text; make the spoken words grip the listener with suspense, horror, and curiosity.
-2. Structure (6 In-Depth Chapters across 36 to 40 Scenes):
+2. Structure (6 In-Depth Chapters across 44 to 48 Scenes):
    - Chapter 1: The Gathering Darkness / The Opening Horror (Shocking hook setting the stakes)
    - Chapter 2: The Political Shadows & Ancient Feuds (Deep historical intrigue and rivalries)
    - Chapter 3: The Unhinged Decree (The obsession and fatal decision)
@@ -21,7 +25,7 @@ Narrative & Emphatic Vocal Rules:
    - Chapter 5: The Brutal Sentence & The River Tiber (The desecration and violent punishment)
    - Chapter 6: The Fall & The Historical Reckoning (The furious rebellion and the killer's fate)
 3. Scene Pacing: Produce exactly 44 to 48 scenes. Each scene contains 50-65 words of intense, evocative narration (~17-21 seconds per cut, ensuring total video length is comfortably between 12 and 14 minutes).
-4. Authentic Museum Visuals: Specify authentic, museum-documented paintings, archival engravings, medieval manuscripts, ancient coin portraits, or archaeological maps (e.g. 'Jean Paul Laurens Cadaver Synod painting', 'Vatican archive manuscript 9th century', 'Lateran basilica ancient Rome reconstruction', 'Tiber river Rome medieval engraving')."""
+4. Authentic Museum Visuals: Specify authentic, museum-documented paintings, archival engravings, medieval manuscripts, ancient coin portraits, or archaeological maps (e.g. 'Jean Paul Laurens Cadaver Synod painting', 'Vatican archive manuscript 9th century illumination', 'Lateran basilica ancient Rome reconstruction painting', 'Tiber river Rome 16th century engraving')."""
 
 
 class Scene(BaseModel):

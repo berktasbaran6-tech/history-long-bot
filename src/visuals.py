@@ -11,14 +11,32 @@ import config
 USER_AGENT = "HistoryDocumentaryBot/1.0 (https://github.com/berktasbaran6-tech/history-long-bot)"
 
 
+SAFE_ELEMENTAL_WORDS = {"fire", "flame", "candle", "candles", "torches", "storm", "clouds", "lightning", "smoke", "fog", "mist", "ocean", "waves"}
+FORBIDDEN_MODERN_WORDS = {"person", "people", "man", "woman", "crowd", "city", "street", "building", "rome", "italy", "tourist", "modern", "court", "hall", "cathedral", "church", "palace"}
+
+
+def _is_safe_elemental_query(query: str) -> bool:
+    """Only allow purely timeless elemental nature videos (fire, candles, storm)."""
+    words = set(query.lower().split())
+    if words & FORBIDDEN_MODERN_WORDS:
+        return False
+    return bool(words & SAFE_ELEMENTAL_WORDS)
+
+
 def _fetch_wikimedia(query: str, work_dir: Path, idx: int) -> Path | None:
-    """Fetch high-resolution public domain museum painting or photo from Wikimedia Commons."""
+    """Fetch high-resolution public domain museum painting, engraving, or manuscript from Wikimedia Commons."""
     try:
+        # Guarantee historical art terms
+        art_query = query
+        lower_q = query.lower()
+        if not any(k in lower_q for k in ("painting", "engraving", "manuscript", "fresco", "sculpture", "bust", "tapestry", "woodcut")):
+            art_query = f"{query} painting"
+
         url = (
             "https://commons.wikimedia.org/w/api.php?"
             "action=query&format=json&generator=search&"
-            f"gsrsearch={urllib.parse.quote(query)}&gsrnamespace=6&"
-            "prop=imageinfo&iiprop=url|size|mime&gsrlimit=8"
+            f"gsrsearch={urllib.parse.quote(art_query)}&gsrnamespace=6&"
+            "prop=imageinfo&iiprop=url|size|mime&gsrlimit=10"
         )
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=12) as resp:
@@ -27,6 +45,11 @@ def _fetch_wikimedia(query: str, work_dir: Path, idx: int) -> Path | None:
         pages = data.get("query", {}).get("pages", {})
         candidates = []
         for pid, pdata in pages.items():
+            title = pdata.get("title", "").lower()
+            # Reject modern photos
+            if any(bad in title for bad in ("tourist", "selfie", "vacation", "2024", "2025", "2026", "renovation")):
+                continue
+
             infos = pdata.get("imageinfo", [])
             if not infos:
                 continue
@@ -37,7 +60,7 @@ def _fetch_wikimedia(query: str, work_dir: Path, idx: int) -> Path | None:
             url_img = info.get("url")
 
             # Prefer high-res jpg/png images
-            if mime in ("image/jpeg", "image/png", "image/webp") and width >= 800 and url_img:
+            if mime in ("image/jpeg", "image/png", "image/webp") and width >= 700 and url_img:
                 candidates.append((width * height, url_img))
 
         if not candidates:
@@ -61,12 +84,11 @@ def _fetch_wikimedia(query: str, work_dir: Path, idx: int) -> Path | None:
 
 
 def _fetch_pixabay(query: str, work_dir: Path, idx: int) -> tuple[Path, str] | None:
-    """Fallback: fetch atmospheric video or image from Pixabay."""
+    """Fetch purely elemental timeless video (candle, fire, storm) from Pixabay."""
     key = os.getenv("PIXABAY_API_KEY", "")
-    if not key:
+    if not key or not _is_safe_elemental_query(query):
         return None
     try:
-        # Try video first
         v_url = f"https://pixabay.com/api/videos/?key={key}&q={urllib.parse.quote(query)}&per_page=5"
         r = requests.get(v_url, timeout=10)
         hits = r.json().get("hits", [])
@@ -80,20 +102,6 @@ def _fetch_pixabay(query: str, work_dir: Path, idx: int) -> tuple[Path, str] | N
                         for chunk in stream.iter_content(chunk_size=8192):
                             f.write(chunk)
                 return out_path, "video"
-
-        # Try image
-        i_url = f"https://pixabay.com/api/?key={key}&q={urllib.parse.quote(query)}&per_page=5&image_type=photo"
-        r = requests.get(i_url, timeout=10)
-        hits = r.json().get("hits", [])
-        if hits:
-            dl_url = hits[0].get("largeImageURL")
-            if dl_url:
-                out_path = work_dir / f"media_{idx}.jpg"
-                with requests.get(dl_url, stream=True, timeout=20) as stream:
-                    with open(out_path, "wb") as f:
-                        for chunk in stream.iter_content(chunk_size=8192):
-                            f.write(chunk)
-                return out_path, "image"
     except Exception as exc:
         print(f"   [pixabay] error: {exc}")
     return None
@@ -102,34 +110,29 @@ def _fetch_pixabay(query: str, work_dir: Path, idx: int) -> tuple[Path, str] | N
 import os
 
 def fetch_media(wikimedia_query: str, pexels_query: str, work_dir: Path, idx: int) -> tuple[Path, str]:
-    """Fetch the best historical or atmospheric media for the scene."""
-    # For dynamic visual pacing, interleave real HD atmospheric motion video on scenes 1, 4, 7, 10
-    if idx % 3 == 1 and pexels_query:
-        pix = _fetch_pixabay(pexels_query, work_dir, idx)
-        if pix and pix[1] == "video":
-            return pix
-
-    # 1. First priority: genuine historical painting or archival photo from Wikimedia Commons
+    """Fetch 100% authentic historical museum art or purely timeless elemental footage (ZERO modern world)."""
+    # 1. First priority: genuine historical painting, manuscript, or engraving from Wikimedia Commons
     wiki_file = _fetch_wikimedia(wikimedia_query, work_dir, idx)
     if wiki_file:
         return wiki_file, "image"
 
-    # 2. Try simpler query on Wikimedia
-    words = wikimedia_query.split()
-    if len(words) > 2:
+    # 2. Try simpler historical art query on Wikimedia
+    words = [w for w in wikimedia_query.split() if w.lower() not in ("painting", "oil", "ancient", "the", "and", "in", "of")]
+    if words:
         simple_query = " ".join(words[:2]) + " painting"
         wiki_file2 = _fetch_wikimedia(simple_query, work_dir, idx)
         if wiki_file2:
             return wiki_file2, "image"
 
-    # 3. Fallback to atmospheric Pixabay footage
-    pix = _fetch_pixabay(pexels_query, work_dir, idx)
-    if pix:
-        return pix
+    # 3. Only if query is strictly elemental (fire, candle, storm), allow motion video
+    if _is_safe_elemental_query(pexels_query):
+        pix = _fetch_pixabay(pexels_query, work_dir, idx)
+        if pix:
+            return pix
 
-    # 4. Final emergency fallback: generic ancient history painting
-    emergency = _fetch_wikimedia("ancient history painting", work_dir, idx)
+    # 4. Final emergency fallback: museum medieval oil painting (Never modern photos!)
+    emergency = _fetch_wikimedia("medieval oil painting historical", work_dir, idx)
     if emergency:
         return emergency, "image"
 
-    raise RuntimeError(f"Could not find any media for scene {idx} ('{wikimedia_query}')")
+    raise RuntimeError(f"Could not find authentic historical media for scene {idx} ('{wikimedia_query}')")
