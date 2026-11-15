@@ -40,7 +40,7 @@ class HistoryScript(BaseModel):
     thumbnail_hook: str = Field(description="2-4 explosive all-caps words for the thumbnail, e.g. 'THE MAD EMPEROR', 'WAR ON THE SEA'")
     thumbnail_query: str = Field(description="Search query for the most dramatic historical painting to use as cover")
     description: str = Field(description="Engaging YouTube description explaining the historical context")
-    tags: list[str] = Field(description="12-16 high-volume history SEO tags")
+    tags: list[str] = Field(description="20-28 high-volume history SEO tags: specific historical names, broad genres ('history documentary', 'ancient history', 'medieval history', 'dark ages', 'bizarre history', 'untold history', 'world history'), search queries, and audience-match tags ('armchair historian', 'history dose', 'kings and generals', 'weird history', 'biographics')")
     scenes: list[Scene] = Field(description="Exactly 44 to 48 sequential scenes building a guaranteed 12-14 minute deep documentary")
 
 

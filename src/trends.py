@@ -27,7 +27,9 @@ def fetch_trending(youtube, queries: list[str]) -> list[str]:
                 type="video",
                 videoDuration="medium",  # 4-20 minutes
                 order="viewCount",
-                maxResults=5,
+                regionCode="US",
+                relevanceLanguage="en",
+                maxResults=8,
             )
             res = req.execute()
             for item in res.get("items", []):

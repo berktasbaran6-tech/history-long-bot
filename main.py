@@ -60,6 +60,23 @@ def build_documentary(script: script_gen.HistoryScript, work_dir: Path):
 
         current_time += dur + 0.2
 
+    # Render Outro Scene (12 seconds of silence + ambient music reflection & fade to black)
+    outro_media = primary_art
+    if not outro_media or not Path(outro_media).exists():
+        jpgs = sorted(work_dir.glob("media_*.jpg"))
+        outro_media = jpgs[-1] if jpgs else (jpgs[0] if jpgs else None)
+
+    if outro_media and Path(outro_media).exists():
+        print("   - Outro Scene: Historical Reflection & Archive Complete (12s ambient silence)")
+        outro_scene = work_dir / "scene_outro.mp4"
+        try:
+            compose.render_outro(Path(outro_media), outro_scene, duration=12.0)
+            scene_files.append(outro_scene)
+            chapters.append((current_time, "Historical Reflection & Outro"))
+            current_time += 12.0
+        except Exception as exc:
+            print(f"   [outro] error creating outro scene: {exc}")
+
     # If first chapter isn't at 00:00, ensure 00:00 exists for YouTube
     if not chapters or chapters[0][0] > 0.5:
         chapters.insert(0, (0.0, "Introduction"))
@@ -130,7 +147,18 @@ def main():
                 chapter_lines.append(f"{format_timestamp(sec)} - {ch_name}")
             timestamps_text = "\n".join(chapter_lines)
 
-            description = f"{script.description}\n\n{timestamps_text}\n\n#history #documentary #ancienthistory #untoldhistory"
+            # High-CTR SEO Description with timestamps, CTA, and engagement prompt
+            description = (
+                f"{script.description}\n\n"
+                f"{timestamps_text}\n\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🏛️ Welcome to UNTOLD HISTORIES — uncovering the dark secrets, lost civilizations, bizarre trials, "
+                f"and forgotten truths of world history through in-depth documentary storytelling.\n\n"
+                f"🔔 Subscribe for daily historical investigations and documentary deep dives.\n"
+                f"💬 What part of this story surprised you the most? Share your thoughts in the comments below!\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"#history #documentary #ancienthistory #untoldhistory #medievalhistory #worldhistory #darkhistory"
+            )
 
             video_id = None
             if youtube:

@@ -138,6 +138,103 @@ def render_scene(media: Path, kind: str, audio: Path, out: Path, duration: float
             badge_path.unlink(missing_ok=True)
 
 
+def media_duration(path: Path) -> float:
+    """Return duration of media file in seconds using ffprobe."""
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=nw=1:nk=1", str(path)],
+        capture_output=True, text=True, check=True,
+    )
+    return float(out.stdout.strip())
+
+
+def render_outro(media: Path, out: Path, duration: float = 12.0):
+    """Render a silent, reflective 12-second outro with ambient particles, ending card, and fade to black."""
+    frames = int(duration * FPS) + 2
+    fade_start = duration - 3.0
+
+    # Create sleek, cinematic outro card
+    card_img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(card_img)
+    tag_font = _font(28)
+    title_font = _font(50)
+    sub_font = _font(28)
+
+    cx, cy = W // 2, H // 2
+    bw, bh = 820, 210
+    bx, by = cx - bw // 2, cy - bh // 2
+
+    # Dark rounded card with subtle gold/red accent line
+    draw.rounded_rectangle([bx, by, bx + bw, by + bh], radius=16, fill=(10, 10, 14, 220))
+    draw.rounded_rectangle([bx, by, bx + bw, by + 5], radius=3, fill=(229, 9, 20, 255))
+
+    tag = "ARCHIVE RECORD // COMPLETE"
+    title = "UNTOLD HISTORIES"
+    sub = "SUBSCRIBE FOR DAILY HISTORICAL INVESTIGATIONS"
+
+    draw.text((cx, by + 42), tag, font=tag_font, fill="#E50914", anchor="mm")
+    draw.text((cx, by + 100), title, font=title_font, fill="#FFFFFF", anchor="mm")
+    draw.text((cx, by + 158), sub, font=sub_font, fill="#CCCCCC", anchor="mm")
+
+    badge_path = out.with_suffix(".outro_card.png")
+    card_img.save(badge_path)
+
+    # Silent audio track
+    silent_audio = out.with_suffix(".silent.wav")
+    _run([
+        "ffmpeg", "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+        "-t", f"{duration:.2f}", "-c:a", "pcm_s16le", str(silent_audio)
+    ])
+
+    overlay_path = None
+    if OVERLAYS_DIR.exists():
+        embers = OVERLAYS_DIR / "embers.mp4"
+        dust = OVERLAYS_DIR / "dust.mp4"
+        overlay_path = dust if dust.exists() else embers
+
+    try:
+        inputs = ["-i", str(media)]
+        filter_parts = [
+            f"[0:v]scale={W*2}:{H*2}:force_original_aspect_ratio=increase,crop={W*2}:{H*2},"
+            f"zoompan=z='min(zoom+0.0004,1.15)':d={frames}:x='iw/2-(iw/zoom/2)':"
+            f"y='ih/2-(ih/zoom/2)':s={W}x{H}:fps={FPS},"
+            f"fade=t=out:st={fade_start:.2f}:d=3.0:color=black[base]"
+        ]
+
+        current_v = "[base]"
+        input_idx = 1
+
+        if overlay_path and overlay_path.exists():
+            inputs.extend(["-stream_loop", "-1", "-i", str(overlay_path)])
+            filter_parts.append(f"{current_v}format=gbrp[base_rgb]")
+            filter_parts.append(f"[{input_idx}:v]scale={W}:{H},setsar=1,format=gbrp[ov_rgb]")
+            filter_parts.append(f"[base_rgb][ov_rgb]blend=all_mode='screen':all_opacity=0.35,format=yuv420p[v_part]")
+            filter_parts.append(f"[v_part]fade=t=out:st={fade_start:.2f}:d=3.0:color=black[v_part_fade]")
+            current_v = "[v_part_fade]"
+            input_idx += 1
+
+        inputs.extend(["-i", str(badge_path)])
+        filter_parts.append(f"{current_v}[{input_idx}:v]overlay=0:0:enable='between(t,0.8,{fade_start:.2f})',format=yuv420p[v_card]")
+        current_v = "[v_card]"
+        input_idx += 1
+
+        inputs.extend(["-i", str(silent_audio)])
+        filter_parts.append(f"[{input_idx}:a]apad[a]")
+
+        _run([
+            "ffmpeg", "-y", *inputs,
+            "-filter_complex", ";".join(filter_parts),
+            "-map", current_v, "-map", "[a]",
+            "-t", f"{duration:.2f}", "-r", str(FPS),
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2",
+            str(out),
+        ])
+    finally:
+        badge_path.unlink(missing_ok=True)
+        silent_audio.unlink(missing_ok=True)
+
+
 def concat(scenes: list[Path], out: Path):
     """Concatenate rendered scenes into a continuous documentary."""
     list_file = out.with_suffix(".txt")
@@ -149,17 +246,24 @@ def concat(scenes: list[Path], out: Path):
 
 
 def add_music(video: Path, out: Path) -> Path:
-    """Mix an atmospheric royalty-free background track under the narration."""
+    """Mix an atmospheric royalty-free background track under narration with smooth outro fade."""
     tracks = []
     if config.MUSIC_DIR.exists():
         tracks = list(config.MUSIC_DIR.glob("*.mp3")) + list(config.MUSIC_DIR.glob("*.ogg")) + list(config.MUSIC_DIR.glob("*.wav"))
     if not tracks:
         return video
     track = random.choice(tracks)
+
+    try:
+        dur = media_duration(video)
+        fade_st = max(0.0, dur - 3.5)
+        fade_filter = f"[1:a]volume={config.MUSIC_VOLUME},afade=t=out:st={fade_st:.2f}:d=3.5[m];[0:a][m]amix=inputs=2:duration=first:normalize=0,afade=t=out:st={max(0.0, dur - 1.0):.2f}:d=1.0[a]"
+    except Exception:
+        fade_filter = f"[1:a]volume={config.MUSIC_VOLUME}[m];[0:a][m]amix=inputs=2:duration=first:normalize=0[a]"
+
     _run([
         "ffmpeg", "-y", "-i", str(video), "-stream_loop", "-1", "-i", str(track),
-        "-filter_complex",
-        f"[1:a]volume={config.MUSIC_VOLUME}[m];[0:a][m]amix=inputs=2:duration=first:normalize=0[a]",
+        "-filter_complex", fade_filter,
         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart", str(out),
     ])

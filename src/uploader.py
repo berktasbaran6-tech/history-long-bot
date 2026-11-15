@@ -77,7 +77,7 @@ def upload(youtube, video_path: Path, title: str, description: str, tags: list[s
             "tags": _fit_tags(tags),
             "categoryId": config.CATEGORY_ID,
             "defaultLanguage": "en",
-            "defaultAudioLanguage": "en",
+            "defaultAudioLanguage": "en-US",
         },
         "status": status,
     }
