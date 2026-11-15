@@ -1,0 +1,62 @@
+name: Daily History Documentary
+
+on:
+  schedule:
+    - cron: "15 6 * * *"   # every day 06:15 UTC (09:15 Türkiye)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build video without uploading (1 = yes)"
+        default: "0"
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ffmpeg & fonts
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Install Python packages
+        run: pip install -r requirements.txt
+
+      - name: Generate & schedule Documentary
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
+        run: python -u main.py
+
+      - name: Keep videos for review (3 days)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentary-${{ github.run_id }}
+          path: |
+            output/**/final.mp4
+            output/**/raw.mp4
+            output/**/thumbnail.jpg
+            output/**/script.json
+          retention-days: 3
+
+      - name: Save history (keeps workflow alive)
+        if: always()
+        run: |
+          git config user.name "history-bot"
+          git config user.email "history-bot@users.noreply.github.com"
+          git add data/history.json || true
+          git commit -m "history: $(date -u +%F)" || echo "nothing to commit"
+          git push || true
