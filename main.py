@@ -86,11 +86,17 @@ def build_documentary(script: script_gen.HistoryScript, work_dir: Path):
     compose.concat(scene_files, raw)
     final_video = compose.add_music(raw, work_dir / "final.mp4")
 
-    # Generate 16:9 Thumbnail
+    # Generate 16:9 High-Impact Thumbnail with Subject Name & Curiosity Subhook
     thumb_path = work_dir / "thumbnail.jpg"
     thumb_media = primary_art or scene_files[0]
     try:
-        thumbnail.create_thumbnail(thumb_media, "⚡ UNTOLD HISTORY", script.thumbnail_hook, thumb_path)
+        badge = getattr(script, "thumbnail_badge", "🔴 HISTORICAL ARCHIVE // UNSEALED")
+        subject = getattr(script, "subject_name", "")
+        subhook = getattr(script, "thumbnail_subhook", "")
+        thumbnail.create_thumbnail(
+            thumb_media, badge, script.thumbnail_hook, thumb_path,
+            subject_name=subject, subhook_text=subhook
+        )
         print(f"   created 16:9 thumbnail {thumb_path.name}")
     except Exception as exc:
         print(f"   [thumbnail] error: {exc}")

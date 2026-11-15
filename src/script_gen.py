@@ -38,7 +38,10 @@ class Scene(BaseModel):
 
 class HistoryScript(BaseModel):
     title: str = Field(description="Catchy, high-CTR YouTube documentary title, 45-65 chars, no hashtags")
-    thumbnail_hook: str = Field(description="2-4 explosive all-caps words for the thumbnail, e.g. 'THE MAD EMPEROR', 'WAR ON THE SEA'")
+    subject_name: str = Field(default="POPE FORMOSUS", description="The primary historical figure or empire in 2-3 all-caps words (e.g. 'POPE FORMOSUS', 'EMPEROR CALIGULA')")
+    thumbnail_hook: str = Field(description="2-4 explosive all-caps shock words for the thumbnail, e.g. 'TRIED AFTER DEATH', 'WAR ON THE SEA'")
+    thumbnail_subhook: str = Field(default="WHY DID ROME PUT A CORPSE ON TRIAL?", description="An intriguing curiosity question or revelation (e.g. 'WHY DID POPE STEPHEN EXHUME HIS PREDECESSOR?')")
+    thumbnail_badge: str = Field(default="🔴 HISTORICAL ARCHIVE // 897 AD", description="Archive tag with year/place (e.g. '🔴 VATICAN ARCHIVES // 897 AD')")
     thumbnail_query: str = Field(description="Search query for the most dramatic historical painting to use as cover")
     description: str = Field(description="Engaging YouTube description explaining the historical context")
     sources: list[str] = Field(default_factory=list, description="3-5 primary historical chronicles or archival academic references validating the events (e.g. 'Liutprand of Cremona - Antapodosis', 'Liber Pontificalis', 'Catholic Encyclopedia')")
