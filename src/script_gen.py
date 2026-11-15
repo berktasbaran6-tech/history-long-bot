@@ -8,25 +8,25 @@ from pydantic import BaseModel, Field
 
 import config
 
-SYSTEM = """You are an elite historical documentary writer behind top YouTube channels like 'The Armchair Historian', 'History Dose', and 'Kings and Generals'.
-Your goal is to produce deeply immersive, richly detailed, 10-to-14 minute YouTube history documentaries (approx 1,400 to 1,800 words total).
+SYSTEM = """You are an elite historical documentary writer behind top YouTube channels like 'The Armchair Historian', 'History Dose', and 'MagnatesMedia'.
+Your goal is to produce deeply immersive, richly detailed, 11-to-14 minute YouTube history documentaries (approx 1,800 to 2,200 words total).
 
-Narrative & Tone Guidelines:
-1. Spoken Tone: Authoritative, cinematic, atmospheric, and profoundly respectful of historical reality. Avoid rushed summaries; explain motivations, political intrigues, personal rivalries, and the psychological atmosphere of the era.
-2. Structure (6 In-Depth Chapters):
-   - Chapter 1: The Inciting Crisis / The Opening Hook (Shocking scene setting the stakes)
-   - Chapter 2: The Political Shadows & Ancient Feuds (Deep historical background context)
-   - Chapter 3: The Fatal Decision (The unhinged decree setting events in motion)
-   - Chapter 4: The Climax / The Unbelievable Reality (The central event described in vivid historical detail)
-   - Chapter 5: The Retribution & The Sentence (The immediate consequences and public reaction)
-   - Chapter 6: The Fall & The Historical Legacy (The collapse of the regime and how history remembers it)
-3. Scene Pacing: Produce exactly 24 to 28 scenes. Each scene contains 45-60 words of deliberate, evocative narration (~20-25 seconds per visual cut).
+Narrative & Emphatic Vocal Rules:
+1. High-Impact Vocal Delivery: Write narration specifically optimized for dynamic speech. Use dramatic pauses with em-dashes (—) and ellipses (...), sharp contrasts, punchy revelations, and rhetorical questions. Never write flat, monotone textbook text; make the spoken words grip the listener with suspense, horror, and curiosity.
+2. Structure (6 In-Depth Chapters across 36 to 40 Scenes):
+   - Chapter 1: The Gathering Darkness / The Opening Horror (Shocking hook setting the stakes)
+   - Chapter 2: The Political Shadows & Ancient Feuds (Deep historical intrigue and rivalries)
+   - Chapter 3: The Unhinged Decree (The obsession and fatal decision)
+   - Chapter 4: The Corpse on Trial / The Unbelievable Spectacle (The courtroom trial in vivid detail)
+   - Chapter 5: The Brutal Sentence & The River Tiber (The desecration and violent punishment)
+   - Chapter 6: The Fall & The Historical Reckoning (The furious rebellion and the killer's fate)
+3. Scene Pacing: Produce exactly 36 to 40 scenes. Each scene contains 50-65 words of intense, evocative narration (~19-23 seconds per cut).
 4. Authentic Museum Visuals: Specify authentic, museum-documented paintings, archival engravings, medieval manuscripts, ancient coin portraits, or archaeological maps (e.g. 'Jean Paul Laurens Cadaver Synod painting', 'Vatican archive manuscript 9th century', 'Lateran basilica ancient Rome reconstruction', 'Tiber river Rome medieval engraving')."""
 
 
 class Scene(BaseModel):
     chapter_name: str = Field(description="Name of the chapter this scene belongs to")
-    narration: str = Field(description="Spoken text for this scene (45-60 words)")
+    narration: str = Field(description="Spoken text for this scene (50-65 words with dramatic pauses like em-dashes and ellipses)")
     wikimedia_query: str = Field(description="Exact search term for public domain historical painting, engraving, or archive photo")
     pexels_query: str = Field(description="Atmospheric B-roll fallback query (e.g. 'cathedral dark candles', 'torches castle fire', 'storm night')")
 
@@ -37,7 +37,7 @@ class HistoryScript(BaseModel):
     thumbnail_query: str = Field(description="Search query for the most dramatic historical painting to use as cover")
     description: str = Field(description="Engaging YouTube description explaining the historical context")
     tags: list[str] = Field(description="12-16 high-volume history SEO tags")
-    scenes: list[Scene] = Field(description="24 to 28 sequential scenes building a 10-14 minute deep documentary")
+    scenes: list[Scene] = Field(description="Exactly 36 to 40 sequential scenes building an 11-14 minute deep documentary")
 
 
 _client = None
@@ -106,11 +106,11 @@ Focus on bizarre military blunders, secret deceptions, eccentric rulers, or shoc
 
 def write_script(idea: TopicIdea) -> HistoryScript:
     """Generate the full documentary script for the chosen topic."""
-    prompt = f"""Write an exceptional, deep-dive 10-to-14 minute historical documentary script for:
+    prompt = f"""Write an exceptional, deep-dive 11-to-14 minute historical documentary script for:
 Topic: {idea.topic}
 Hook idea: {idea.hook}
 
-Produce exactly 24 to 28 sequential scenes (each 45-60 words of captivating narration).
+Produce exactly 36 to 40 sequential scenes (each 50-65 words of captivating, emphatic narration).
 Ensure each scene has an accurate, museum-verified Wikimedia Commons search query for genuine historical art, statues, or archival photos."""
 
     return _ask(prompt, HistoryScript)
