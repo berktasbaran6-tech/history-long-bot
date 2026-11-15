@@ -42,8 +42,8 @@ class HistoryScript(BaseModel):
 _client = None
 FALLBACK_MODELS = [
     config.GEMINI_MODEL,
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
 ]
 
 
