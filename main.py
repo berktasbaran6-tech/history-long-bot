@@ -147,10 +147,19 @@ def main():
                 chapter_lines.append(f"{format_timestamp(sec)} - {ch_name}")
             timestamps_text = "\n".join(chapter_lines)
 
-            # High-CTR SEO Description with timestamps, CTA, and engagement prompt
+            # Format primary sources & archival citations
+            sources_lines = []
+            if getattr(script, "sources", None):
+                sources_lines = ["\n📚 HISTORICAL SOURCES & ARCHIVAL REFERENCES:"]
+                for src_item in script.sources:
+                    sources_lines.append(f"• {src_item}")
+            sources_text = "\n".join(sources_lines) if sources_lines else ""
+
+            # High-CTR SEO Description with timestamps, sources, CTA, and engagement prompt
             description = (
                 f"{script.description}\n\n"
-                f"{timestamps_text}\n\n"
+                f"{timestamps_text}\n"
+                f"{sources_text}\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"🏛️ Welcome to UNTOLD HISTORIES — uncovering the dark secrets, lost civilizations, bizarre trials, "
                 f"and forgotten truths of world history through in-depth documentary storytelling.\n\n"

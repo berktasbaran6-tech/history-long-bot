@@ -25,7 +25,8 @@ Narrative & Emphatic Vocal Rules:
    - Chapter 5: The Brutal Sentence & The River Tiber (The desecration and violent punishment)
    - Chapter 6: The Fall & The Historical Reckoning (The furious rebellion and the killer's fate)
 3. Scene Pacing: Produce exactly 44 to 48 scenes. Each scene contains 50-65 words of intense, evocative narration (~17-21 seconds per cut, ensuring total video length is comfortably between 12 and 14 minutes).
-4. Authentic Museum Visuals: Specify authentic, museum-documented paintings, archival engravings, medieval manuscripts, ancient coin portraits, or archaeological maps (e.g. 'Jean Paul Laurens Cadaver Synod painting', 'Vatican archive manuscript 9th century illumination', 'Lateran basilica ancient Rome reconstruction painting', 'Tiber river Rome 16th century engraving')."""
+4. Authentic Museum Visuals: Specify authentic, museum-documented paintings, archival engravings, medieval manuscripts, ancient coin portraits, or archaeological maps (e.g. 'Jean Paul Laurens Cadaver Synod painting', 'Vatican archive manuscript 9th century illumination', 'Lateran basilica ancient Rome reconstruction painting', 'Tiber river Rome 16th century engraving').
+5. Verifiable Historical Sources: Always cite 3-5 authentic primary historical chronicles, archival manuscripts, or academic sources (e.g. chronicler names, original historical texts, museum references) that verify the event."""
 
 
 class Scene(BaseModel):
@@ -40,6 +41,7 @@ class HistoryScript(BaseModel):
     thumbnail_hook: str = Field(description="2-4 explosive all-caps words for the thumbnail, e.g. 'THE MAD EMPEROR', 'WAR ON THE SEA'")
     thumbnail_query: str = Field(description="Search query for the most dramatic historical painting to use as cover")
     description: str = Field(description="Engaging YouTube description explaining the historical context")
+    sources: list[str] = Field(default_factory=list, description="3-5 primary historical chronicles or archival academic references validating the events (e.g. 'Liutprand of Cremona - Antapodosis', 'Liber Pontificalis', 'Catholic Encyclopedia')")
     tags: list[str] = Field(description="20-28 high-volume history SEO tags: specific historical names, broad genres ('history documentary', 'ancient history', 'medieval history', 'dark ages', 'bizarre history', 'untold history', 'world history'), search queries, and audience-match tags ('armchair historian', 'history dose', 'kings and generals', 'weird history', 'biographics')")
     scenes: list[Scene] = Field(description="Exactly 44 to 48 sequential scenes building a guaranteed 12-14 minute deep documentary")
 
