@@ -48,12 +48,13 @@ def build_documentary(script: script_gen.HistoryScript, work_dir: Path):
         if primary_art is None and kind == "image":
             primary_art = media
 
+        is_new_chapter = (i == 0) or (bool(scene.chapter_name) and scene.chapter_name != last_chapter)
         out_scene = work_dir / f"scene_{i:02d}.mp4"
-        compose.render_scene(media, kind, audio, out_scene, dur, i, scene.chapter_name)
+        compose.render_scene(media, kind, audio, out_scene, dur, i, scene.chapter_name, show_badge=is_new_chapter)
         scene_files.append(out_scene)
 
         # Record chapters
-        if scene.chapter_name and scene.chapter_name != last_chapter:
+        if is_new_chapter and scene.chapter_name:
             chapters.append((current_time, scene.chapter_name))
             last_chapter = scene.chapter_name
 

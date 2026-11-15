@@ -58,7 +58,7 @@ def make_chapter_badge(chapter_name: str, out_path: Path):
     img.save(out_path)
 
 
-def render_scene(media: Path, kind: str, audio: Path, out: Path, duration: float, idx: int, chapter_name: str = ""):
+def render_scene(media: Path, kind: str, audio: Path, out: Path, duration: float, idx: int, chapter_name: str = "", show_badge: bool = False):
     """Render a single scene with Ken Burns motion, atmospheric floating particles, and chapter badges."""
     length = duration + 0.2
     frames = int(length * FPS) + 2
@@ -73,9 +73,9 @@ def render_scene(media: Path, kind: str, audio: Path, out: Path, duration: float
         elif dust.exists():
             overlay_path = dust
 
-    # Generate chapter badge if chapter_name is given
+    # Generate chapter badge when a new chapter begins
     badge_path = None
-    if chapter_name and idx in (0, 3, 6, 9):
+    if show_badge and chapter_name:
         badge_path = out.with_suffix(".badge.png")
         try:
             make_chapter_badge(chapter_name, badge_path)

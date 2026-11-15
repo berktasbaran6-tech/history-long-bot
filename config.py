@@ -32,8 +32,10 @@ MUSIC_DIR = ROOT / "assets" / "music"
 # --- Production -----------------------------------------------------------
 VIDEOS_PER_DAY = int(os.getenv("VIDEOS_PER_DAY", "1"))
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-TTS_VOICE = os.getenv("TTS_VOICE", "en-US-ChristopherNeural")  # deep, viral, authoritative voice
-TTS_RATE = os.getenv("TTS_RATE", "-3%")  # deliberate documentary pacing
+TTS_VOICE = os.getenv("TTS_VOICE", "en-US-ChristopherNeural")  # deep, authoritative documentary voice
+TTS_RATE = os.getenv("TTS_RATE", "-4%")  # measured, suspenseful documentary pacing
+TTS_PITCH = os.getenv("TTS_PITCH", "-2Hz")  # warm baritone resonance
+TARGET_SCENES = 25  # 25-30 scenes * 25s = ~10-13 minutes deep documentary
 WIDTH, HEIGHT, FPS = 1920, 1080, 30
 MUSIC_VOLUME = 0.08  # background music under documentary narration
 

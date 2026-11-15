@@ -12,6 +12,7 @@ async def _synthesize_async(text: str, out_path: Path):
         text=text,
         voice=config.TTS_VOICE,
         rate=config.TTS_RATE,
+        pitch=getattr(config, "TTS_PITCH", "-2Hz"),
     )
     await communicate.save(str(out_path))
 
