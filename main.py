@@ -49,7 +49,7 @@ def build_documentary(script: script_gen.HistoryScript, work_dir: Path):
             primary_art = media
 
         out_scene = work_dir / f"scene_{i:02d}.mp4"
-        compose.render_scene(media, kind, audio, out_scene, dur, i)
+        compose.render_scene(media, kind, audio, out_scene, dur, i, scene.chapter_name)
         scene_files.append(out_scene)
 
         # Record chapters

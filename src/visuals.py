@@ -103,6 +103,12 @@ import os
 
 def fetch_media(wikimedia_query: str, pexels_query: str, work_dir: Path, idx: int) -> tuple[Path, str]:
     """Fetch the best historical or atmospheric media for the scene."""
+    # For dynamic visual pacing, interleave real HD atmospheric motion video on scenes 1, 4, 7, 10
+    if idx % 3 == 1 and pexels_query:
+        pix = _fetch_pixabay(pexels_query, work_dir, idx)
+        if pix and pix[1] == "video":
+            return pix
+
     # 1. First priority: genuine historical painting or archival photo from Wikimedia Commons
     wiki_file = _fetch_wikimedia(wikimedia_query, work_dir, idx)
     if wiki_file:
