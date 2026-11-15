@@ -101,11 +101,12 @@ def render_scene(media: Path, kind: str, audio: Path, out: Path, duration: float
         current_v = "[base]"
         input_idx = 1
 
-        # Particle Overlay Blend (Screen mode)
+        # Particle Overlay Blend (Screen mode in planar RGB to preserve authentic colors with zero purple tint)
         if overlay_path and overlay_path.exists():
             inputs.extend(["-stream_loop", "-1", "-i", str(overlay_path)])
-            filter_parts.append(f"[{input_idx}:v]scale={W}:{H},setsar=1,format=yuv420p[ov]")
-            filter_parts.append(f"{current_v}[ov]blend=all_mode='screen':all_opacity=0.55,format=yuv420p[v_part]")
+            filter_parts.append(f"{current_v}format=gbrp[base_rgb]")
+            filter_parts.append(f"[{input_idx}:v]scale={W}:{H},setsar=1,format=gbrp[ov_rgb]")
+            filter_parts.append(f"[base_rgb][ov_rgb]blend=all_mode='screen':all_opacity=0.38,format=yuv420p[v_part]")
             current_v = "[v_part]"
             input_idx += 1
 
