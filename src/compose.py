@@ -268,3 +268,184 @@ def add_music(video: Path, out: Path) -> Path:
         "-movflags", "+faststart", str(out),
     ])
     return out
+
+
+def make_short_caption(text: str, out_path: Path, max_w: int = 920):
+    """Generate high-contrast bold subtitle overlay for 9:16 vertical Shorts."""
+    img = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    font = _font(72)
+
+    lines, line = [], ""
+    for word in text.split():
+        test = f"{line} {word}".strip()
+        if draw.textlength(test, font=font) <= max_w:
+            line = test
+        else:
+            if line:
+                lines.append(line)
+            line = word
+    if line:
+        lines.append(line)
+
+    line_h = 92
+    total_h = line_h * len(lines[:3])
+    top = int(1920 * 0.68) - total_h // 2
+
+    # Rounded dark translucent box
+    draw.rounded_rectangle([50, top - 24, 1080 - 50, top + total_h + 20], radius=28, fill=(8, 8, 12, 160))
+
+    colors = ["#FFFFFF", "#FFD700", "#FFFFFF"]
+    for i, l in enumerate(lines[:3]):
+        w = draw.textlength(l, font=font)
+        draw.text(((1080 - w) / 2, top + i * line_h), l, font=font,
+                  fill=colors[i % len(colors)], stroke_width=12, stroke_fill="black")
+
+    img.save(out_path)
+
+
+def make_short_cta_card(out_path: Path):
+    """Call-To-Action card at the end of the Short directing to the full 14-min documentary."""
+    img = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    tag_font = _font(36)
+    main_font = _font(52)
+    sub_font = _font(34)
+
+    bx, by = 60, 1420
+    bw, bh = 960, 240
+
+    # Dark rounded card with red accent line
+    draw.rounded_rectangle([bx, by, bx + bw, by + bh], radius=24, fill=(10, 10, 16, 235))
+    draw.rounded_rectangle([bx, by, bx + bw, by + 8], radius=4, fill=(229, 9, 20, 255))
+
+    draw.text((540, by + 45), "🏛️ UNTOLD HISTORIES", font=tag_font, fill="#E50914", anchor="mm")
+    draw.text((540, by + 115), "WATCH FULL 14-MIN INVESTIGATION", font=main_font, fill="#FFFFFF", anchor="mm")
+    draw.text((540, by + 185), "👉 LINK IN COMMENTS & DESCRIPTION", font=sub_font, fill="#FFD700", anchor="mm")
+
+    img.save(out_path)
+
+
+def render_teaser_short(script, work_dir: Path, out_path: Path) -> Path | None:
+    """Assemble a high-retention 45-55 second vertical 9:16 teaser Short from the opening scenes."""
+    short_scenes = []
+    total_dur = 0.0
+
+    # Pick opening hook scenes up to ~48-52s
+    selected_indices = []
+    for i in range(len(script.scenes)):
+        audio_file = work_dir / f"voice_{i:02d}.mp3"
+        if not audio_file.exists():
+            continue
+        dur = media_duration(audio_file)
+        if total_dur + dur <= 56.0 or len(selected_indices) < 3:
+            selected_indices.append(i)
+            total_dur += dur + 0.2
+            if total_dur >= 45.0:
+                break
+
+    if not selected_indices:
+        return None
+
+    cta_badge = work_dir / "short_cta.png"
+    make_short_cta_card(cta_badge)
+
+    try:
+        for seq, i in enumerate(selected_indices):
+            audio = work_dir / f"voice_{i:02d}.mp3"
+            dur = media_duration(audio)
+            length = dur + 0.2
+            frames = int(length * FPS) + 2
+
+            # Find visual media
+            media = work_dir / f"media_{i}.jpg"
+            kind = "image"
+            if not media.exists():
+                media = work_dir / f"media_{i}.mp4"
+                kind = "video"
+            if not media.exists():
+                media = work_dir / "media_0.jpg"
+                kind = "image"
+
+            cap_badge = work_dir / f"cap_{i:02d}.png"
+            scene_obj = script.scenes[i]
+            short_text = " ".join(scene_obj.narration.split()[:14])
+            make_short_caption(short_text, cap_badge)
+
+            is_last = (seq == len(selected_indices) - 1)
+            out_vscene = work_dir / f"vscene_{i:02d}.mp4"
+
+            inputs = []
+            filter_parts = []
+
+            if kind == "video":
+                inputs.extend(["-stream_loop", "-1", "-i", str(media)])
+                filter_parts.append(f"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps={FPS},vignette=PI/4[base]")
+            else:
+                inputs.extend(["-i", str(media)])
+                zoom_dir = "min(zoom+0.0006,1.22)" if i % 2 == 0 else "max(1.22-on*0.0006,1.0)"
+                filter_parts.append(
+                    f"[0:v]scale=2160:3840:force_original_aspect_ratio=increase,crop=2160:3840,"
+                    f"zoompan=z='{zoom_dir}':d={frames}:x='iw/2-(iw/zoom/2)':"
+                    f"y='ih/2-(ih/zoom/2)':s=1080x1920:fps={FPS},vignette=PI/4[base]"
+                )
+
+            current_v = "[base]"
+            input_idx = 1
+
+            # Floating particles
+            overlay_path = None
+            if OVERLAYS_DIR.exists():
+                embers = OVERLAYS_DIR / "embers.mp4"
+                dust = OVERLAYS_DIR / "dust.mp4"
+                overlay_path = embers if i % 2 == 1 and embers.exists() else dust
+
+            if overlay_path and overlay_path.exists():
+                inputs.extend(["-stream_loop", "-1", "-i", str(overlay_path)])
+                filter_parts.append(f"{current_v}format=gbrp[base_rgb]")
+                filter_parts.append(f"[{input_idx}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,format=gbrp[ov_rgb]")
+                filter_parts.append(f"[base_rgb][ov_rgb]blend=all_mode='screen':all_opacity=0.35,format=yuv420p[v_part]")
+                current_v = "[v_part]"
+                input_idx += 1
+
+            # Caption overlay
+            inputs.extend(["-i", str(cap_badge)])
+            filter_parts.append(f"{current_v}[{input_idx}:v]overlay=0:0:enable='between(t,0.2,{length-0.1:.2f})',format=yuv420p[v_cap]")
+            current_v = "[v_cap]"
+            input_idx += 1
+
+            # CTA Card on last scene
+            if is_last and cta_badge.exists():
+                inputs.extend(["-i", str(cta_badge)])
+                filter_parts.append(f"{current_v}[{input_idx}:v]overlay=0:0:enable='gte(t,{max(0.0, length-4.5):.2f})',format=yuv420p[v_cta]")
+                current_v = "[v_cta]"
+                input_idx += 1
+
+            # Audio
+            inputs.extend(["-i", str(audio)])
+            filter_parts.append(f"[{input_idx}:a]apad[a]")
+
+            _run([
+                "ffmpeg", "-y", *inputs,
+                "-filter_complex", ";".join(filter_parts),
+                "-map", current_v, "-map", "[a]",
+                "-t", f"{length:.2f}", "-r", str(FPS),
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2",
+                str(out_vscene),
+            ])
+            short_scenes.append(out_vscene)
+            cap_badge.unlink(missing_ok=True)
+    finally:
+        cta_badge.unlink(missing_ok=True)
+
+    if not short_scenes:
+        return None
+
+    # Concat vertical scenes
+    raw_short = work_dir / "short_raw.mp4"
+    concat(short_scenes, raw_short)
+
+    # Mix background music
+    final_short = add_music(raw_short, out_path)
+    return final_short

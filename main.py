@@ -182,14 +182,37 @@ def main():
                 print(f"   uploaded https://youtube.com/watch?v={video_id} -> publishes {pub_msg}")
                 if thumb.exists():
                     uploader.set_thumbnail(youtube, video_id, thumb)
+
+            # Build and upload vertical teaser Short pointing to the full documentary
+            short_id = None
+            try:
+                print("   Building vertical teaser Short...")
+                short_out = work_dir / "short_final.mp4"
+                short_video = compose.render_teaser_short(script, work_dir, short_out)
+                if youtube and short_video and short_video.exists():
+                    full_link = f"https://youtube.com/watch?v={video_id}" if video_id else ""
+                    short_title = f"{script.thumbnail_hook}: {script.subject_name} #shorts"[:95]
+                    short_desc = (
+                        f"{script.description[:250]}...\n\n"
+                        f"👉 WATCH THE FULL 14-MINUTE INVESTIGATION ON OUR CHANNEL:\n"
+                        f"{full_link}\n\n"
+                        f"#shorts #history #documentary #untoldhistory #ancienthistory"
+                    )
+                    short_tags = ["shorts", "history shorts", "untold history", script.subject_name.lower(), "documentary"]
+                    short_id = uploader.upload(youtube, short_video, short_title, short_desc, short_tags, slot)
+                    print(f"   uploaded teaser short https://youtube.com/watch?v={short_id}")
+            except Exception as exc:
+                print(f"   [teaser short] error: {exc}")
             else:
-                print("   DRY_RUN: video built, not uploaded")
+                if not youtube:
+                    print("   DRY_RUN: video built, not uploaded")
 
             history.append({
                 "date": today,
                 "topic": idea.topic,
                 "title": script.title,
                 "video_id": video_id,
+                "short_id": short_id,
                 "duration_seconds": round(seconds, 1),
                 "publish_at": slot.isoformat() if slot else None,
             })
