@@ -53,7 +53,6 @@ _client = None
 FALLBACK_MODELS = [
     config.GEMINI_MODEL,
     "gemini-3.5-flash-lite",
-    "gemini-3.8-flash",
 ]
 
 
@@ -64,7 +63,10 @@ def _client_instance():
     return _client
 
 
-def _ask(prompt: str, schema: type[BaseModel], retries: int = 4):
+TOPIC_SYSTEM = "You are an elite history documentary producer selecting viral, fascinating, lesser-known history topics for YouTube."
+
+
+def _ask(prompt: str, schema: type[BaseModel], system_instruction: str = SYSTEM, retries: int = 5):
     last = None
     for attempt in range(retries):
         model_name = FALLBACK_MODELS[min(attempt, len(FALLBACK_MODELS) - 1)]
@@ -73,7 +75,7 @@ def _ask(prompt: str, schema: type[BaseModel], retries: int = 4):
                 model=model_name,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM,
+                    system_instruction=system_instruction,
                     response_mime_type="application/json",
                     response_schema=schema,
                     temperature=0.7,
@@ -83,8 +85,9 @@ def _ask(prompt: str, schema: type[BaseModel], retries: int = 4):
             return schema.model_validate_json(raw)
         except Exception as exc:
             last = exc
-            print(f"[script] attempt {attempt+1} ({model_name}) error: {exc}")
-            time.sleep(2)
+            wait_time = (attempt + 1) * 5
+            print(f"[script] attempt {attempt+1} ({model_name}) error: {exc}. Retrying in {wait_time}s...")
+            time.sleep(wait_time)
     raise RuntimeError(f"Gemini generation failed: {last}")
 
 
@@ -109,7 +112,7 @@ Recently covered by us (DO NOT REPEAT):
 Select {count} wildly captivating, lesser-known, or deeply dramatic historical events or figures from Ancient, Medieval, or Modern history that make viewers say 'Did this really happen?!'.
 Focus on bizarre military blunders, secret deceptions, eccentric rulers, or shocking ancient mysteries."""
 
-    plan = _ask(prompt, TopicPlan)
+    plan = _ask(prompt, TopicPlan, system_instruction=TOPIC_SYSTEM)
     return plan.ideas[:count]
 
 
@@ -122,4 +125,4 @@ Hook idea: {idea.hook}
 Produce exactly 44 to 48 sequential scenes (each 50-65 words of captivating, emphatic narration, ensuring the total length is at least 12 minutes).
 Ensure each scene has an accurate, museum-verified Wikimedia Commons search query for genuine historical art, statues, or archival photos."""
 
-    return _ask(prompt, HistoryScript)
+    return _ask(prompt, HistoryScript, system_instruction=SYSTEM)

@@ -31,7 +31,7 @@ MUSIC_DIR = ROOT / "assets" / "music"
 
 # --- Production -----------------------------------------------------------
 VIDEOS_PER_DAY = int(os.getenv("VIDEOS_PER_DAY", "1"))
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 TTS_VOICE = os.getenv("TTS_VOICE", "en-US-GuyNeural")  # dynamic, emphatic, expressive documentary voice
 TTS_RATE = os.getenv("TTS_RATE", "-2%")  # energetic yet measured documentary pacing
 TTS_PITCH = os.getenv("TTS_PITCH", "+0Hz")
