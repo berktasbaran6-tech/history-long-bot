@@ -69,7 +69,7 @@ TOPIC_SYSTEM = "You are an elite history documentary producer selecting viral, f
 def _ask(prompt: str, schema: type[BaseModel], system_instruction: str = SYSTEM, retries: int = 5):
     last = None
     for attempt in range(retries):
-        model_name = FALLBACK_MODELS[min(attempt, len(FALLBACK_MODELS) - 1)]
+        model_name = FALLBACK_MODELS[attempt % len(FALLBACK_MODELS)]
         try:
             response = _client_instance().models.generate_content(
                 model=model_name,
