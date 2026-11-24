@@ -52,6 +52,8 @@ class HistoryScript(BaseModel):
 _client = None
 FALLBACK_MODELS = [
     config.GEMINI_MODEL,
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite",
     "gemini-3.5-flash-lite",
 ]
 
@@ -66,7 +68,7 @@ def _client_instance():
 TOPIC_SYSTEM = "You are an elite history documentary producer selecting viral, fascinating, lesser-known history topics for YouTube."
 
 
-def _ask(prompt: str, schema: type[BaseModel], system_instruction: str = SYSTEM, retries: int = 5):
+def _ask(prompt: str, schema: type[BaseModel], system_instruction: str = SYSTEM, retries: int = 8):
     last = None
     for attempt in range(retries):
         model_name = FALLBACK_MODELS[attempt % len(FALLBACK_MODELS)]
@@ -85,8 +87,8 @@ def _ask(prompt: str, schema: type[BaseModel], system_instruction: str = SYSTEM,
             return schema.model_validate_json(raw)
         except Exception as exc:
             last = exc
-            wait_time = (attempt + 1) * 5
-            print(f"[script] attempt {attempt+1} ({model_name}) error: {exc}. Retrying in {wait_time}s...")
+            wait_time = min(60, (attempt + 1) * 15)
+            print(f"[script] attempt {attempt+1}/{retries} ({model_name}) error: {exc}. Retrying in {wait_time}s...")
             time.sleep(wait_time)
     raise RuntimeError(f"Gemini generation failed: {last}")
 
@@ -94,6 +96,30 @@ def _ask(prompt: str, schema: type[BaseModel], system_instruction: str = SYSTEM,
 class TopicIdea(BaseModel):
     topic: str = Field(description="Specific, intriguing historical event or figure")
     hook: str = Field(description="Explosive first sentence hook")
+
+
+EMERGENCY_TOPICS = [
+    TopicIdea(
+        topic="The Dancing Plague of 1518",
+        hook="In July 1518, a woman stepped into a narrow street in Strasbourg and began to dance feverishly—and she didn't stop until hundreds joined her in dancing themselves to death."
+    ),
+    TopicIdea(
+        topic="The War of the Bucket: 1325",
+        hook="In 1325, two Italian city-states waged a bloody war that killed thousands of soldiers—all over a single stolen wooden oak bucket."
+    ),
+    TopicIdea(
+        topic="The Great Molasses Flood of 1919",
+        hook="On an unseasonably warm January afternoon in Boston, a 50-foot steel tank ruptured, unleashing a 35-mile-per-hour tidal wave of boiling black molasses that suffocated the city."
+    ),
+    TopicIdea(
+        topic="The London Monster of 1788",
+        hook="For two terrifying years, wealthy women across Georgian London were stalked and slashed by a phantom predator who vanished into the London fog."
+    ),
+    TopicIdea(
+        topic="The Tang Dynasty Poison Emperor: Emperor Wuzong",
+        hook="Obsessed with achieving physical immortality, a powerful Chinese emperor consumed toxic elixirs of mercury and sulfur, slowly descending into murderous madness."
+    ),
+]
 
 
 class TopicPlan(BaseModel):
@@ -112,8 +138,18 @@ Recently covered by us (DO NOT REPEAT):
 Select {count} wildly captivating, lesser-known, or deeply dramatic historical events or figures from Ancient, Medieval, or Modern history that make viewers say 'Did this really happen?!'.
 Focus on bizarre military blunders, secret deceptions, eccentric rulers, or shocking ancient mysteries."""
 
-    plan = _ask(prompt, TopicPlan, system_instruction=TOPIC_SYSTEM)
-    return plan.ideas[:count]
+    try:
+        plan = _ask(prompt, TopicPlan, system_instruction=TOPIC_SYSTEM)
+        if plan.ideas:
+            return plan.ideas[:count]
+    except Exception as exc:
+        print(f"[warning] plan_topics AI generation failed ({exc}), falling back to emergency verified topic")
+
+    # Fallback to unused emergency topic
+    for fallback in EMERGENCY_TOPICS:
+        if fallback.topic not in recent:
+            return [fallback]
+    return [EMERGENCY_TOPICS[0]]
 
 
 def write_script(idea: TopicIdea) -> HistoryScript:
