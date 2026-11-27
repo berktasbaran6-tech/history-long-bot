@@ -124,15 +124,27 @@ def render_scene(media: Path, kind: str, audio: Path, out: Path, duration: float
 
         complex_filter = ";".join(filter_parts)
 
-        _run([
-            "ffmpeg", "-y", *inputs,
-            "-filter_complex", complex_filter,
-            "-map", current_v, "-map", "[a]",
-            "-t", f"{length:.2f}", "-r", str(FPS),
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2",
-            str(out),
-        ])
+        try:
+            _run([
+                "ffmpeg", "-y", *inputs,
+                "-filter_complex", complex_filter,
+                "-map", current_v, "-map", "[a]",
+                "-t", f"{length:.2f}", "-r", str(FPS),
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2",
+                str(out),
+            ])
+        except Exception as ffmpeg_err:
+            print(f"   [compose] scene {idx} ffmpeg error ({ffmpeg_err}), using solid atmospheric fallback")
+            _run([
+                "ffmpeg", "-y",
+                "-f", "lavfi", "-i", f"color=c=0x0f0e13:s={WIDTH}x{HEIGHT}:r={FPS}:d={length:.2f}",
+                "-i", str(audio),
+                "-t", f"{length:.2f}",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2",
+                str(out),
+            ])
     finally:
         if badge_path and badge_path.exists():
             badge_path.unlink(missing_ok=True)

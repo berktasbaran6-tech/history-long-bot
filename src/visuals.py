@@ -77,6 +77,22 @@ def _fetch_wikimedia(query: str, work_dir: Path, idx: int) -> Path | None:
             f.write(dresp.read())
 
         if out_file.stat().st_size > 10000:
+            # Normalize and downscale any giant museum archive scans to avoid ffmpeg crashes
+            try:
+                from PIL import Image
+                Image.MAX_IMAGE_PIXELS = None
+                with Image.open(out_file) as im:
+                    im = im.convert("RGB")
+                    w, h = im.size
+                    if w > 2560 or h > 1440:
+                        im.thumbnail((2560, 1440), Image.Resampling.LANCZOS)
+                    out_jpg = work_dir / f"media_{idx}.jpg"
+                    im.save(out_jpg, "JPEG", quality=90)
+                    if out_jpg != out_file and out_file.exists():
+                        out_file.unlink(missing_ok=True)
+                    return out_jpg
+            except Exception as resize_err:
+                print(f"   [wikimedia] image resize note: {resize_err}")
             return out_file
     except Exception as exc:
         print(f"   [wikimedia] error searching '{query}': {exc}")

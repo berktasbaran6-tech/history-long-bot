@@ -14,15 +14,17 @@ flow = InstalledAppFlow.from_client_secrets_file(
     scopes=SCOPES,
 )
 
+chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
 class ChromeProfileLauncher:
     def open(self, url, new=0, autoraise=True):
         with open("auth_url.txt", "w", encoding="utf-8") as f:
             f.write(url)
         subprocess.Popen([
-            "chrome.exe",
+            chrome_path,
             '--profile-directory=Profile 3',
             url
-        ], shell=True)
+        ])
         return True
 
 webbrowser.register('custom_chrome', None, ChromeProfileLauncher(), preferred=True)
